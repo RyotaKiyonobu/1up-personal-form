@@ -474,7 +474,11 @@
             <div class="field"><span>遅番</span>${seg("late", [["ok", "可"], ["ban", "不可", true], ["fixed", "固定"]], p.late)}</div>
             <div class="field"><span>日勤</span>${seg("day", [["ok", "可"], ["ban", "不可", true]], p.day)}</div>
             <p class="muted">写真の「運」は遅の読み違いなので、遅として書いてください。「健」は健診で普段は使いません。</p>
-            <div class="field"><span>棟</span>${seg("floor", [["both", "両方"], ["male", "男子のみ"], ["female", "女子のみ"]], p.floor)}</div>
+            <div class="field">
+              <span>棟</span>
+              ${seg("floor", [["both", "両方"], ["prefer-male", "できれば男子"], ["prefer-female", "できれば女子"], ["male", "男子のみ"], ["female", "女子のみ"]], p.floor)}
+              <p class="muted">「できれば」は別棟でも可。人数が足りないときだけ他棟へ回す。</p>
+            </div>
             <div class="field"><span>入れない曜日</span>${dayBtns("banWeekdays", p.banWeekdays)}</div>
             ${showFixedDays ? `<div class="field"><span>固定する曜日</span>${dayBtns("fixedWeekdays", p.fixedWeekdays)}</div>
               <div class="field"><span>固定の内容</span><input id="fixedNote" value="${esc(p.fixedNote)}" placeholder="例: 毎週月曜は早" /></div>` : ""}
@@ -572,6 +576,8 @@
       code("night", "夜"); code("early", "早"); code("late", "遅"); code("day", "日");
       if (p.floor === "male") bits.push("男子のみ");
       if (p.floor === "female") bits.push("女子のみ");
+      if (p.floor === "prefer-male") bits.push("できれば男子");
+      if (p.floor === "prefer-female") bits.push("できれば女子");
       if (p.floor === "both") bits.push("両棟");
       if ((p.banWeekdays || []).length) bits.push("曜日不可" + dayNames(p.banWeekdays));
       if (p.weekMax) bits.push("週上限" + p.weekMax);
