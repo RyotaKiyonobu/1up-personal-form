@@ -74,8 +74,14 @@
       background: #fff;
     }
     textarea { min-height: 88px; resize: vertical; }
-    .nums { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .nums label { font-size: 0.75rem; color: var(--muted); }
+    .nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .nums label { font-size: 0.75rem; color: var(--muted); min-width: 0; }
+    .nums label input { display: block; width: 100%; margin-top: 4px; }
+    .nums > :nth-child(3) { grid-column: 1 / -1; }
+    @media (min-width: 480px) {
+      .nums { grid-template-columns: 1fr 1fr 1fr; }
+      .nums > :nth-child(3) { grid-column: auto; }
+    }
     .checks { display: flex; flex-wrap: wrap; gap: 6px; }
     .checks label {
       display: flex; align-items: center; gap: 6px;
@@ -84,8 +90,9 @@
       font-size: 0.85rem;
     }
     .limit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    @media (min-width: 480px) { .limit-grid { grid-template-columns: 1.2fr 0.8fr 1fr 1fr; } }
-    .limit-grid label { font-size: 0.75rem; color: var(--muted); }
+    @media (min-width: 520px) { .limit-grid { grid-template-columns: 1.2fr 0.8fr 1fr 1fr; } }
+    .limit-grid label { font-size: 0.75rem; color: var(--muted); min-width: 0; }
+    .limit-grid label input, .limit-grid label select { display: block; width: 100%; margin-top: 4px; }
     .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .btn {
       border: 1px solid var(--line);
@@ -495,8 +502,9 @@
               <div class="nums">
                 <label>週の上限<input type="number" min="0" max="7" inputmode="numeric" id="weekMax" value="${esc(p.weekMax)}" /></label>
                 <label>月の最低<input type="number" min="0" max="31" inputmode="numeric" id="minWorkDays" value="${esc(p.minWorkDays)}" /></label>
-                <label>連勤上限（この人だけ違うとき）<input type="number" min="0" max="14" inputmode="numeric" id="maxConsecutive" value="${esc(p.maxConsecutive)}" /></label>
+                <label>連勤上限<input type="number" min="0" max="14" inputmode="numeric" id="maxConsecutive" value="${esc(p.maxConsecutive)}" /></label>
               </div>
+              <p class="muted">連勤上限は、この人だけ全体ルールと違うとき。</p>
             </div>
             <div class="field">
               <span>時間帯（任意。例: 終了19時まで）</span>
