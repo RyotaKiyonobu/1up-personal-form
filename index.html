@@ -110,7 +110,7 @@
     .save { font-size: 0.75rem; color: var(--muted); text-align: center; margin: 0 0 4px; }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
     .toast {
-      position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%);
+      position: fixed; left: 50%; bottom: 148px; transform: translateX(-50%);
       background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px;
       font-size: 0.82rem; z-index: 5;
     }
@@ -120,7 +120,7 @@
 <body>
   <main>
     <h1>個人条件（仮名のまま）</h1>
-    <div class="banner">実名・電話・社員番号は書かない。勤務表の仮名（横堀・田中…）のまま打つ。途中で閉じても、この端末の中に残る。</div>
+    <div class="banner">実名・電話・社員番号は書かない。勤務表の仮名（横堀・田中…）のまま打つ。<b>途中保存は下の「途中保存」を押し、出てきた文をLINEに貼って送ってください。</b>端末の中だけに残すのは保険です。</div>
     <p class="muted">下の「次の仮名」は、横堀→田中…と15人を順に見るだけです。特別ルールがなければ「制限なしで次へ」。細かい条件は各人の自由記入へ。</p>
     <div class="progress" id="progress"></div>
     <div class="names" id="names"></div>
@@ -225,15 +225,20 @@
       <textarea id="globalNote" placeholder="任意"></textarea>
     </div>
     <div class="card">
-      <h2>送り方</h2>
-      <p class="muted">打ち終わったら下の「コピー」を押し、LINEなどで返す。JSONファイルでも可。</p>
+      <h2>途中保存・再開</h2>
+      <p class="muted">端末の中だけだと消えることがあります。<b>途中でも</b>「途中保存」を押し、コピーした文をLINEに送ってください（自分宛てでも可）。続きは同じリンクを開き、返ってきたJSONを読み込むか下に貼ります。</p>
       <div class="row">
-        <button type="button" class="btn primary" id="copy">送り用テキストをコピー</button>
-        <button type="button" class="btn" id="copyJson">JSONをコピー</button>
-        <button type="button" class="btn" id="json">JSONを保存</button>
+        <button type="button" class="btn primary" id="draft">途中保存（コピー＋ファイル）</button>
+        <button type="button" class="btn" id="copy">送り用テキストをコピー</button>
       </div>
       <div class="row">
-        <button type="button" class="btn" id="load">JSONを読み込む</button>
+        <button type="button" class="btn" id="copyJson">JSONをコピー</button>
+        <button type="button" class="btn" id="json">JSONファイルを保存</button>
+        <button type="button" class="btn" id="load">JSONファイルを読む</button>
+      </div>
+      <textarea id="pasteJson" rows="3" placeholder="LINEで返ってきた JSON をここに貼る"></textarea>
+      <p><button type="button" class="btn" id="loadPaste">貼り付けて再開</button></p>
+      <div class="row">
         <button type="button" class="btn" id="clear">この端末の記入を消す</button>
       </div>
       <input type="file" id="file" accept="application/json,.json" hidden />
@@ -244,9 +249,12 @@
   <div class="sticky">
     <p class="save" id="saved">未保存</p>
     <div class="row">
+      <button type="button" class="btn primary" id="draftSticky">途中保存</button>
+    </div>
+    <div class="row">
       <button type="button" class="btn" id="prev">前の仮名</button>
       <button type="button" class="btn ok" id="none">制限なしで次へ</button>
-      <button type="button" class="btn primary" id="next">次の仮名</button>
+      <button type="button" class="btn" id="next">次の仮名</button>
     </div>
   </div>
   <div class="toast" id="toast" hidden></div>
@@ -849,6 +857,59 @@
       state.globalNote = e.target.value;
       persist();
     });
+    function applyImportedPayload(parsed) {
+      if (parsed.kind !== KIND || !Array.isArray(parsed.people)) throw new Error("kind");
+      const next = emptyState();
+      next.people = next.people.map((p) => {
+        const got = parsed.people.find((x) => x.id === p.id);
+        return got ? { ...p, ...got, displayName: p.displayName } : p;
+      });
+      next.pairs = parsed.pairs?.length ? parsed.pairs : next.pairs;
+      next.consecutive = { ...emptyConsecutive(), ...(parsed.consecutive || {}) };
+      if (!Array.isArray(next.consecutive.countShifts)) next.consecutive.countShifts = [];
+      if (!Array.isArray(next.consecutive.patterns)) next.consecutive.patterns = [];
+      next.globalNote = parsed.globalNote || "";
+      state = next;
+      persist();
+      render();
+    }
+
+    function downloadJson(text) {
+      const blob = new Blob(["\uFEFF" + text], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "1up-個人条件-途中.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function saveDraft() {
+      persist();
+      const json = JSON.stringify(exportPayload(), null, 2);
+      const text = exportText();
+      document.getElementById("preview").textContent = text + "\n\n---- JSON ----\n" + json;
+      downloadJson(json);
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(json);
+        copied = true;
+      } catch {
+        /* 下の枠を長押し */
+      }
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "1up個人条件（途中）", text: json });
+          toast("共有しました。LINEに送れば端末の外に残ります");
+          return;
+        } catch {
+          /* 共有をやめた場合はコピー結果を出す */
+        }
+      }
+      toast(copied ? "JSONをコピー＋ファイル保存しました。LINEに貼って送ってください" : "ファイルを保存しました。下の枠を長押ししてLINEへ");
+    }
+
+    document.getElementById("draft").addEventListener("click", () => saveDraft());
+    document.getElementById("draftSticky").addEventListener("click", () => saveDraft());
     document.getElementById("copy").addEventListener("click", async () => {
       const text = exportText();
       document.getElementById("preview").textContent = text;
@@ -876,13 +937,8 @@
       }
     });
     document.getElementById("json").addEventListener("click", () => {
-      const blob = new Blob(["\uFEFF" + JSON.stringify(exportPayload(), null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "1up-個人条件-仮名.json";
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast("JSONを保存しました");
+      downloadJson(JSON.stringify(exportPayload(), null, 2));
+      toast("JSONファイルを保存しました");
     });
     document.getElementById("load").addEventListener("click", () => document.getElementById("file").click());
     document.getElementById("file").addEventListener("change", async (e) => {
@@ -890,25 +946,31 @@
       e.target.value = "";
       if (!file) return;
       try {
-        const parsed = JSON.parse(await file.text());
-        if (parsed.kind !== KIND || !Array.isArray(parsed.people)) throw new Error("kind");
-        const next = emptyState();
-        next.people = next.people.map((p) => {
-          const got = parsed.people.find((x) => x.id === p.id);
-          return got ? { ...p, ...got, displayName: p.displayName } : p;
-        });
-        next.pairs = parsed.pairs?.length ? parsed.pairs : next.pairs;
-        next.consecutive = { ...emptyConsecutive(), ...(parsed.consecutive || {}) };
-        if (!Array.isArray(next.consecutive.countShifts)) next.consecutive.countShifts = [];
-        if (!Array.isArray(next.consecutive.patterns)) next.consecutive.patterns = [];
-        next.globalNote = parsed.globalNote || "";
-        state = next;
-        persist();
-        render();
-        toast("読み込みました");
+        applyImportedPayload(JSON.parse(await file.text()));
+        toast("読み込みました。続きから打てます");
       } catch {
         toast("このJSONは使えません");
       }
+    });
+    document.getElementById("loadPaste").addEventListener("click", () => {
+      const raw = document.getElementById("pasteJson").value.trim();
+      if (!raw) {
+        toast("JSONを貼ってください");
+        return;
+      }
+      try {
+        applyImportedPayload(JSON.parse(raw));
+        toast("貼り付けを反映しました。続きから打てます");
+      } catch {
+        toast("このJSONは使えません");
+      }
+    });
+    document.getElementById("clear").addEventListener("click", () => {
+      if (!confirm("この端末の記入を全部消しますか？")) return;
+      localStorage.removeItem(KEY);
+      state = emptyState();
+      render();
+      toast("消しました");
     });
     bindConsecutive();
     bindStickyVisibility();
