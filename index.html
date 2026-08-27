@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1c1914" />
+  <title>1up 個人条件（仮名）</title>
+  <style>
+    :root {
+      --paper: #f3efe6;
+      --ink: #1c1914;
+      --muted: #6b6258;
+      --line: #d9d0c3;
+      --accent: #9a3412;
+      --ok: #0f766e;
+      --card: #fffaf3;
+      font-family: "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); }
+    main { max-width: 560px; margin: 0 auto; padding: 12px 12px calc(96px + env(safe-area-inset-bottom)); }
+    h1 { font-size: 1.15rem; margin: 0 0 6px; }
+    h2 { font-size: 1rem; margin: 0 0 8px; }
+    p, label { font-size: 0.92rem; line-height: 1.45; }
+    .muted { color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+    .banner { background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; padding: 8px 10px; font-size: 0.82rem; margin-bottom: 10px; }
+    .progress { display: flex; justify-content: space-between; gap: 8px; margin: 8px 0 10px; font-size: 0.82rem; }
+    .progress span { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+    .names { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
+    .names button {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 0.85rem;
+    }
+    .names button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .names button.done { outline: 2px solid var(--ok); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 0 0 12px; }
+    .who { font-size: 1.2rem; font-weight: 700; }
+    .block { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .field { margin: 12px 0 0; }
+    .field > span { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+    .seg button, .days button {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      min-height: 44px;
+    }
+    .seg button.on, .days button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .seg button.warn.on { background: var(--accent); border-color: var(--accent); }
+    .days { display: flex; flex-wrap: wrap; gap: 6px; }
+    input[type="number"], input[type="date"], input[type="time"], select, textarea {
+      width: 100%;
+      font: inherit;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .nums { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .nums label { font-size: 0.75rem; color: var(--muted); }
+    .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .checks label {
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid var(--line); background: #fff;
+      border-radius: 10px; padding: 8px 10px; min-height: 44px;
+      font-size: 0.85rem;
+    }
+    .limit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (min-width: 480px) { .limit-grid { grid-template-columns: 1.2fr 0.8fr 1fr 1fr; } }
+    .limit-grid label { font-size: 0.75rem; color: var(--muted); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font: inherit;
+      min-height: 44px;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 650; flex: 1; }
+    .btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); flex: 1; }
+    .sticky {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: color-mix(in srgb, var(--paper) 92%, white);
+      border-top: 1px solid var(--line);
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    }
+    .sticky inner, .sticky .row { max-width: 560px; margin: 0 auto; }
+    .save { font-size: 0.75rem; color: var(--muted); text-align: center; margin: 0 0 4px; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+    .toast {
+      position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%);
+      background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px;
+      font-size: 0.82rem; z-index: 5;
+    }
+    pre { white-space: pre-wrap; word-break: break-word; font-size: 0.72rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px; max-height: 180px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>個人条件（仮名のまま）</h1>
+    <div class="banner">実名・電話・社員番号は書かない。勤務表の仮名（横堀・田中…）のまま打つ。途中で閉じても、この端末の中に残る。</div>
+    <p class="muted">特別ルールがなければ「制限なし」で次へ。分かるところだけ。必須／できればは最後に選べる。</p>
+    <div class="progress" id="progress"></div>
+    <div class="names" id="names"></div>
+    <div id="person"></div>
+    <div class="card" id="pairs"></div>
+    <div class="card" id="consecutive">
+      <h2>連続勤務の上限（ここで書く）</h2>
+      <p class="muted">数字ひとつでは足りないので、数え方と例外を現場の言い方のまま書いてください。空欄は「使っていない」。人によって違う場合は、各人の「連勤上限」にも書いてください。</p>
+      <p class="muted">聞きかけ：夜勤を含めて5日？　違ったら消して書き直す。</p>
+
+      <div class="field">
+        <span>「勤務」に数える記号</span>
+        <div class="checks" id="consCount">
+          <label><input type="checkbox" data-cons-list="countShifts" value="early"> 早</label>
+          <label><input type="checkbox" data-cons-list="countShifts" value="late"> 遅</label>
+          <label><input type="checkbox" data-cons-list="countShifts" value="day"> 日</label>
+          <label><input type="checkbox" data-cons-list="countShifts" value="night"> 夜</label>
+          <label><input type="checkbox" data-cons-list="countShifts" value="ake"> 明</label>
+          <label><input type="checkbox" data-cons-list="countShifts" value="paid"> 有</label>
+          <label><input type="checkbox" data-cons-list="countShifts" value="public"> 公</label>
+        </div>
+        <input id="consCountOther" placeholder="その他（任意）" style="margin-top:8px" />
+      </div>
+      <div class="field">
+        <span>明は連勤に含むか</span>
+        <div class="seg" data-cons-field="akeInStreak">
+          <button type="button" data-val="include">含む</button>
+          <button type="button" data-val="exclude">含まない</button>
+          <button type="button" data-val="depends">場合による</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>夜→明のあと、連勤は切れるか</span>
+        <div class="seg" data-cons-field="afterNightAke">
+          <button type="button" data-val="breaks">切れる</button>
+          <button type="button" data-val="continues">切れない</button>
+          <button type="button" data-val="restBreaks">明の次が休なら切れる</button>
+          <button type="button" data-val="other">その他</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>1日2コマ（早/日 など）は</span>
+        <div class="seg" data-cons-field="twoSlots">
+          <button type="button" data-val="oneDay">1日と数える</button>
+          <button type="button" data-val="other">その他</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>前の月から続く連勤は</span>
+        <div class="seg" data-cons-field="monthBoundary">
+          <button type="button" data-val="see">見る</button>
+          <button type="button" data-val="ignore">見ない</button>
+        </div>
+        <p class="muted">いま：前月末が3連勤なら月初で重ねないよう配慮（できれば）</p>
+      </div>
+      <div class="field">
+        <span>上限（当てはまるところだけ。単位は日）</span>
+        <div class="limit-grid">
+          <label>全員<input type="number" min="0" max="14" inputmode="numeric" id="consMaxAll" /></label>
+          <label>夜勤を含むか
+            <select id="consMaxAllNight">
+              <option value="">—</option>
+              <option value="include">含む</option>
+              <option value="exclude">含まない</option>
+            </select>
+          </label>
+          <label>社員<input type="number" min="0" max="14" inputmode="numeric" id="consMaxFull" /></label>
+          <label>パート<input type="number" min="0" max="14" inputmode="numeric" id="consMaxPart" /></label>
+          <label>川又<input type="number" min="0" max="14" inputmode="numeric" id="consMaxKawamata" /></label>
+          <label>夜勤に入る人<input type="number" min="0" max="14" inputmode="numeric" id="consMaxNightPeople" /></label>
+          <label>夜勤だけの連続上限<input type="number" min="0" max="14" inputmode="numeric" id="consNightStreakMax" /></label>
+          <label>連勤のあと休ませる日数<input type="number" min="0" max="7" inputmode="numeric" id="consRestAfterStreakDays" /></label>
+        </div>
+      </div>
+      <div class="field">
+        <span>よくあるパターン</span>
+        <div class="checks" id="consPatterns">
+          <label><input type="checkbox" data-cons-list="patterns" value="noConsecutiveNight"> 夜勤は連続させない</label>
+          <label><input type="checkbox" data-cons-list="patterns" value="restAfterNightAke"> 夜→明の次は必ず休</label>
+          <label><input type="checkbox" data-cons-list="patterns" value="restAfterStreak"> 連勤のあと休ませる</label>
+          <label><input type="checkbox" data-cons-list="patterns" value="shorterWeekend"> 土日をまたぐ連勤は短く</label>
+          <label><input type="checkbox" data-cons-list="patterns" value="fullVsPart"> 社員とパートで上限が違う</label>
+          <label><input type="checkbox" data-cons-list="patterns" value="perPerson"> 人によって違う</label>
+        </div>
+      </div>
+      <div class="field">
+        <span>守らせ方（全体）</span>
+        <div class="seg" data-cons-field="hardness">
+          <button type="button" data-val="hard">必ず</button>
+          <button type="button" data-val="soft">できれば</button>
+          <button type="button" data-val="unknown">不明</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>自由記入（いちばん大事。例外・言い回しはそのまま）</span>
+        <textarea id="consFreeText" placeholder="例: 夜勤を含めて5日まで。明は連勤に数えない。川又は社員と同じ…"></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <h2>全員に効くこと・補足</h2>
+      <p class="muted">個人枠に書けないルール（例: 夜勤のあとは明け、など）</p>
+      <textarea id="globalNote" placeholder="任意"></textarea>
+    </div>
+    <div class="card">
+      <h2>送り方</h2>
+      <p class="muted">打ち終わったら下の「コピー」を押し、LINEなどで返す。JSONファイルでも可。</p>
+      <div class="row">
+        <button type="button" class="btn primary" id="copy">送り用テキストをコピー</button>
+        <button type="button" class="btn" id="copyJson">JSONをコピー</button>
+        <button type="button" class="btn" id="json">JSONを保存</button>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="load">JSONを読み込む</button>
+        <button type="button" class="btn" id="clear">この端末の記入を消す</button>
+      </div>
+      <input type="file" id="file" accept="application/json,.json" hidden />
+      <p class="muted">コピー用（長押しでも可）</p>
+      <pre id="preview"></pre>
+    </div>
+  </main>
+  <div class="sticky">
+    <p class="save" id="saved">未保存</p>
+    <div class="row">
+      <button type="button" class="btn" id="prev">前の人</button>
+      <button type="button" class="btn ok" id="none">制限なしで次へ</button>
+      <button type="button" class="btn primary" id="next">次の人</button>
+    </div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+  <script>
+    const KIND = "gh1up-personal-constraints";
+    const VERSION = 1;
+    const KEY = "shift-roster-template:personal-form:v1";
+    const DAYS = [
+      { v: 1, l: "月" }, { v: 2, l: "火" }, { v: 3, l: "水" }, { v: 4, l: "木" },
+      { v: 5, l: "金" }, { v: 6, l: "土" }, { v: 0, l: "日" },
+    ];
+    const STAFF = [
+      { id: "e01", displayName: "横堀", group: 1, employmentHint: "full" },
+      { id: "e02", displayName: "田中", group: 1, employmentHint: "full" },
+      { id: "e03", displayName: "島田", group: 1, employmentHint: "full" },
+      { id: "e04", displayName: "川又", group: 1, employmentHint: "part-as-full" },
+      { id: "e05", displayName: "樋口", group: 1, employmentHint: "full" },
+      { id: "e06", displayName: "山口", group: 1, employmentHint: "full" },
+      { id: "e07", displayName: "小田部", group: 1, employmentHint: "full" },
+      { id: "e08", displayName: "金子", group: 2, employmentHint: "part" },
+      { id: "e09", displayName: "深谷", group: 2, employmentHint: "part" },
+      { id: "e10", displayName: "海老沢", group: 2, employmentHint: "part" },
+      { id: "e11", displayName: "寺門", group: 2, employmentHint: "part" },
+      { id: "e12", displayName: "平井", group: 2, employmentHint: "part" },
+      { id: "e13", displayName: "高島朋", group: 2, employmentHint: "part" },
+      { id: "e14", displayName: "小室", group: 2, employmentHint: "part" },
+      { id: "e15", displayName: "勝山", group: 2, employmentHint: "part" },
+    ];
+
+    function emptyPerson(meta) {
+      return {
+        id: meta.id,
+        displayName: meta.displayName,
+        group: meta.group,
+        noSpecial: false,
+        employment: meta.employmentHint,
+        night: "",
+        early: "",
+        late: "",
+        day: "",
+        transport: "",
+        floor: "",
+        banWeekdays: [],
+        fixedWeekdays: [],
+        weekMax: "",
+        minWorkDays: "",
+        maxConsecutive: "",
+        fixedNote: "",
+        periodFrom: "",
+        periodTo: "",
+        hardness: "",
+        earliestStart: "",
+        latestEnd: "",
+        memo: "",
+      };
+    }
+
+    function emptyConsecutive() {
+      return {
+        countShifts: [],
+        countOther: "",
+        akeInStreak: "",
+        afterNightAke: "",
+        twoSlots: "",
+        monthBoundary: "",
+        nightStreakMax: "",
+        maxAll: "",
+        maxAllNight: "",
+        maxFull: "",
+        maxPart: "",
+        maxKawamata: "",
+        maxNightPeople: "",
+        restAfterStreakDays: "",
+        patterns: [],
+        hardness: "",
+        freeText: "",
+      };
+    }
+
+    function emptyState() {
+      return {
+        kind: KIND,
+        version: VERSION,
+        facility: "グループホーム1up",
+        dummyNames: true,
+        updatedAt: "",
+        index: 0,
+        people: STAFF.map(emptyPerson),
+        pairs: [{ type: "incompatible", aId: "", bId: "", scope: "same_floor", hardness: "hard", note: "" }],
+        consecutive: emptyConsecutive(),
+        globalNote: "",
+      };
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return emptyState();
+        const parsed = JSON.parse(raw);
+        const base = emptyState();
+        if (!Array.isArray(parsed.people)) return base;
+        base.people = base.people.map((p) => {
+          const got = parsed.people.find((x) => x.id === p.id);
+          return got ? { ...p, ...got, displayName: p.displayName } : p;
+        });
+        base.pairs = Array.isArray(parsed.pairs) && parsed.pairs.length ? parsed.pairs : base.pairs;
+        base.consecutive = { ...emptyConsecutive(), ...(parsed.consecutive || {}) };
+        if (!Array.isArray(base.consecutive.countShifts)) base.consecutive.countShifts = [];
+        if (!Array.isArray(base.consecutive.patterns)) base.consecutive.patterns = [];
+        base.globalNote = parsed.globalNote || "";
+        base.index = Math.min(Number(parsed.index) || 0, STAFF.length - 1);
+        base.updatedAt = parsed.updatedAt || "";
+        return base;
+      } catch {
+        return emptyState();
+      }
+    }
+
+    let state = load();
+
+    function personStatus(p) {
+      if (p.noSpecial) return "none";
+      const filled = ["ban", "fixed"].includes(p.night) || ["ban", "fixed"].includes(p.early) || ["ban", "fixed"].includes(p.late)
+        || p.day === "ban" || p.transport === "ban" || (p.floor && p.floor !== "both")
+        || (p.banWeekdays || []).length || p.weekMax || p.minWorkDays || p.maxConsecutive
+        || p.fixedNote || p.memo || p.earliestStart || p.latestEnd || (p.fixedWeekdays || []).length;
+      return filled ? "filled" : "empty";
+    }
+
+    function persist() {
+      state.updatedAt = new Date().toISOString();
+      localStorage.setItem(KEY, JSON.stringify(state));
+      const el = document.getElementById("saved");
+      const t = new Date(state.updatedAt);
+      el.textContent = "この端末に保存済み " + t.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("preview").textContent = exportText();
+    }
+
+    function toast(msg) {
+      const el = document.getElementById("toast");
+      el.hidden = false;
+      el.textContent = msg;
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { el.hidden = true; }, 2200);
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function seg(field, options, current) {
+      return `<div class="seg" data-field="${field}">` + options.map(([val, lab, warn]) =>
+        `<button type="button" data-val="${val}" class="${current === val ? "on" : ""} ${warn ? "warn" : ""}">${lab}</button>`
+      ).join("") + `</div>`;
+    }
+
+    function dayBtns(field, selected) {
+      const set = new Set((selected || []).map(Number));
+      return `<div class="days" data-days="${field}">` + DAYS.map((d) =>
+        `<button type="button" data-val="${d.v}" class="${set.has(d.v) ? "on" : ""}">${d.l}</button>`
+      ).join("") + `</div>`;
+    }
+
+    function counts() {
+      let empty = 0, none = 0, filled = 0;
+      for (const p of state.people) {
+        const s = personStatus(p);
+        if (s === "none") none += 1;
+        else if (s === "filled") filled += 1;
+        else empty += 1;
+      }
+      return { empty, none, filled };
+    }
+
+    function renderNav() {
+      const c = counts();
+      document.getElementById("progress").innerHTML =
+        `<span>未 ${c.empty}</span><span>制限なし ${c.none}</span><span>条件あり ${c.filled}</span>`;
+      document.getElementById("names").innerHTML = state.people.map((p, i) => {
+        const s = personStatus(p);
+        const mark = s === "none" ? " ○" : s === "filled" ? " ●" : "";
+        return `<button type="button" data-i="${i}" class="${i === state.index ? "on" : ""} ${s !== "empty" ? "done" : ""}">${esc(p.displayName)}${mark}</button>`;
+      }).join("");
+    }
+
+    function empLabel(hint) {
+      if (hint === "part") return "パート";
+      if (hint === "part-as-full") return "パート（ほぼ社員扱い）";
+      return "社員";
+    }
+
+    function renderPerson() {
+      const p = state.people[state.index];
+      const meta = STAFF[state.index];
+      const block = meta.group === 1 ? "上ブロック" : "下ブロック";
+      const showFixedDays = p.early === "fixed" || p.late === "fixed";
+      document.getElementById("person").innerHTML = `
+        <div class="card">
+          <div class="who">${esc(p.displayName)}</div>
+          <div class="block">${block}　${state.index + 1} / ${STAFF.length}</div>
+          <div class="field">
+            <span>この人だけ特別なルールはあるか</span>
+            ${seg("noSpecial", [["0", "ある（下を書く）"], ["1", "制限なし"]], p.noSpecial ? "1" : "0")}
+          </div>
+          <div ${p.noSpecial ? "hidden" : ""}>
+            <div class="field">
+              <span>雇用（違ったら直す）</span>
+              ${seg("employment", [["full", "社員"], ["part", "パート"], ["part-as-full", "パートだがほぼ社員"]], p.employment || meta.employmentHint)}
+              <p class="muted">仮: ${empLabel(meta.employmentHint)}</p>
+            </div>
+            <div class="field"><span>夜勤</span>${seg("night", [["ok", "可"], ["ban", "不可", true]], p.night)}</div>
+            <div class="field"><span>早番</span>${seg("early", [["ok", "可"], ["ban", "不可", true], ["fixed", "固定"]], p.early)}</div>
+            <div class="field"><span>遅番</span>${seg("late", [["ok", "可"], ["ban", "不可", true], ["fixed", "固定"]], p.late)}</div>
+            <div class="field"><span>日勤</span>${seg("day", [["ok", "可"], ["ban", "不可", true]], p.day)}</div>
+            <p class="muted">写真の「運」は遅の読み違いなので、遅として書いてください。「健」は健診で普段は使いません。</p>
+            <div class="field"><span>棟</span>${seg("floor", [["both", "両方"], ["male", "男子のみ"], ["female", "女子のみ"]], p.floor)}</div>
+            <div class="field"><span>入れない曜日</span>${dayBtns("banWeekdays", p.banWeekdays)}</div>
+            ${showFixedDays ? `<div class="field"><span>固定する曜日</span>${dayBtns("fixedWeekdays", p.fixedWeekdays)}</div>
+              <div class="field"><span>固定の内容</span><input id="fixedNote" value="${esc(p.fixedNote)}" placeholder="例: 毎週月曜は早" /></div>` : ""}
+            <div class="field">
+              <span>数字（空でよい）</span>
+              <div class="nums">
+                <label>週の上限<input type="number" min="0" max="7" inputmode="numeric" id="weekMax" value="${esc(p.weekMax)}" /></label>
+                <label>月の最低<input type="number" min="0" max="31" inputmode="numeric" id="minWorkDays" value="${esc(p.minWorkDays)}" /></label>
+                <label>連勤上限（この人だけ違うとき）<input type="number" min="0" max="14" inputmode="numeric" id="maxConsecutive" value="${esc(p.maxConsecutive)}" /></label>
+              </div>
+            </div>
+            <div class="field">
+              <span>時間帯（任意。例: 終了19時まで）</span>
+              <div class="nums" style="grid-template-columns:1fr 1fr">
+                <label>開始はこれ以降<input type="time" id="earliestStart" value="${esc(p.earliestStart)}" /></label>
+                <label>終了はこれ以前<input type="time" id="latestEnd" value="${esc(p.latestEnd)}" /></label>
+              </div>
+            </div>
+            <div class="field">
+              <span>期間つきなら</span>
+              <div class="nums" style="grid-template-columns:1fr 1fr">
+                <label>開始日<input type="date" id="periodFrom" value="${esc(p.periodFrom)}" /></label>
+                <label>終了日<input type="date" id="periodTo" value="${esc(p.periodTo)}" /></label>
+              </div>
+            </div>
+            <div class="field">
+              <span>守らせ方</span>
+              ${seg("hardness", [["hard", "必ず"], ["soft", "できれば"], ["unknown", "不明"]], p.hardness)}
+            </div>
+            <div class="field">
+              <span>上にない条件（自由記入）</span>
+              <textarea id="memo" placeholder="例: 月木は午前中しか早番できない">${esc(p.memo)}</textarea>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function nameOptions(selected) {
+      return `<option value="">（仮名）</option>` + STAFF.map((s) =>
+        `<option value="${s.id}" ${s.id === selected ? "selected" : ""}>${esc(s.displayName)}</option>`
+      ).join("");
+    }
+
+    function renderPairs() {
+      const rows = state.pairs.map((pair, i) => `
+        <div class="pair" data-pair="${i}">
+          <select data-k="aId">${nameOptions(pair.aId)}</select>
+          <select data-k="bId">${nameOptions(pair.bId)}</select>
+          <select data-k="type">
+            <option value="incompatible" ${pair.type !== "must_pair" ? "selected" : ""}>一緒に入れない</option>
+            <option value="must_pair" ${pair.type === "must_pair" ? "selected" : ""}>必ず一緒</option>
+          </select>
+          <select data-k="scope">
+            <option value="same_floor" ${pair.scope !== "same_day" ? "selected" : ""}>同じ棟がダメ／一緒</option>
+            <option value="same_day" ${pair.scope === "same_day" ? "selected" : ""}>同じ日がダメ／一緒</option>
+          </select>
+          <select data-k="hardness">
+            <option value="hard" ${pair.hardness !== "soft" ? "selected" : ""}>必ず</option>
+            <option value="soft" ${pair.hardness === "soft" ? "selected" : ""}>できれば</option>
+          </select>
+          <input data-k="note" value="${esc(pair.note)}" placeholder="メモ" />
+        </div>`).join("");
+      document.getElementById("pairs").innerHTML = `
+        <h2>2人の組合せ</h2>
+        <p class="muted">なければ空のまま。仮名同士。</p>
+        ${rows}
+        <button type="button" class="btn" id="addPair">組を足す</button>`;
+    }
+
+    function exportPayload() {
+      return {
+        kind: KIND,
+        version: VERSION,
+        facility: "グループホーム1up",
+        dummyNames: true,
+        updatedAt: state.updatedAt || new Date().toISOString(),
+        people: state.people.map((p) => ({ ...p, status: personStatus(p) })),
+        pairs: state.pairs.filter((x) => x.aId && x.bId),
+        consecutive: state.consecutive,
+        globalNote: state.globalNote,
+      };
+    }
+
+    function dayNames(ids) {
+      const map = Object.fromEntries(DAYS.map((d) => [d.v, d.l]));
+      return (ids || []).map((n) => map[Number(n)]).filter(Boolean).join("");
+    }
+
+    function personLine(p) {
+      const s = personStatus(p);
+      if (s === "empty") return p.displayName + ": （未記入）";
+      if (s === "none") return p.displayName + ": 制限なし";
+      const bits = [];
+      const code = (k, lab) => { if (p[k] === "ban") bits.push(lab + "不可"); if (p[k] === "ok") bits.push(lab + "可"); if (p[k] === "fixed") bits.push(lab + "固定"); };
+      code("night", "夜"); code("early", "早"); code("late", "遅"); code("day", "日");
+      if (p.floor === "male") bits.push("男子のみ");
+      if (p.floor === "female") bits.push("女子のみ");
+      if (p.floor === "both") bits.push("両棟");
+      if ((p.banWeekdays || []).length) bits.push("曜日不可" + dayNames(p.banWeekdays));
+      if (p.weekMax) bits.push("週上限" + p.weekMax);
+      if (p.minWorkDays) bits.push("最低" + p.minWorkDays);
+      if (p.maxConsecutive) bits.push("連勤" + p.maxConsecutive);
+      if (p.earliestStart || p.latestEnd) bits.push("時間" + (p.earliestStart || "") + "〜" + (p.latestEnd || ""));
+      if (p.fixedNote) bits.push(p.fixedNote);
+      if (p.memo) bits.push(p.memo);
+      if (p.hardness === "hard") bits.push("必ず");
+      if (p.hardness === "soft") bits.push("できれば");
+      return p.displayName + ": " + (bits.join(" / ") || "条件あり");
+    }
+
+    function consecutiveHasContent(c) {
+      if (!c) return false;
+      if ((c.countShifts || []).length || (c.patterns || []).length) return true;
+      return Boolean(
+        c.countOther || c.akeInStreak || c.afterNightAke || c.twoSlots || c.monthBoundary
+        || c.nightStreakMax || c.maxAll || c.maxAllNight || c.maxFull || c.maxPart
+        || c.maxKawamata || c.maxNightPeople || c.restAfterStreakDays || c.hardness || c.freeText
+      );
+    }
+
+    function consecutiveLine(c) {
+      if (!consecutiveHasContent(c)) return "";
+      const bits = [];
+      const shiftLab = { early: "早", late: "遅", day: "日", night: "夜", ake: "明", paid: "有", public: "公" };
+      if ((c.countShifts || []).length) bits.push("数える:" + c.countShifts.map((k) => shiftLab[k] || k).join(""));
+      if (c.countOther) bits.push("その他 " + c.countOther);
+      const ake = { include: "明は含む", exclude: "明は含まない", depends: "明は場合による" };
+      if (ake[c.akeInStreak]) bits.push(ake[c.akeInStreak]);
+      const after = { breaks: "夜明で切れる", continues: "夜明でも切れない", restBreaks: "明の次が休なら切れる", other: "夜明はその他" };
+      if (after[c.afterNightAke]) bits.push(after[c.afterNightAke]);
+      if (c.twoSlots === "oneDay") bits.push("2コマは1日");
+      if (c.twoSlots === "other") bits.push("2コマはその他");
+      if (c.monthBoundary === "see") bits.push("月またぎを見る");
+      if (c.monthBoundary === "ignore") bits.push("月またぎは見ない");
+      if (c.maxAll) bits.push("全員" + c.maxAll + (c.maxAllNight === "include" ? "(夜含む)" : c.maxAllNight === "exclude" ? "(夜含まず)" : ""));
+      if (c.maxFull) bits.push("社員" + c.maxFull);
+      if (c.maxPart) bits.push("パート" + c.maxPart);
+      if (c.maxKawamata) bits.push("川又" + c.maxKawamata);
+      if (c.maxNightPeople) bits.push("夜勤者" + c.maxNightPeople);
+      if (c.nightStreakMax) bits.push("夜勤連続" + c.nightStreakMax);
+      if (c.restAfterStreakDays) bits.push("連勤後休" + c.restAfterStreakDays);
+      const pat = {
+        noConsecutiveNight: "夜勤連続なし",
+        restAfterNightAke: "夜明の次は休",
+        restAfterStreak: "連勤後に休",
+        shorterWeekend: "土日またぎ短く",
+        fullVsPart: "社員パートで違う",
+        perPerson: "人によって違う",
+      };
+      for (const k of c.patterns || []) if (pat[k]) bits.push(pat[k]);
+      if (c.hardness === "hard") bits.push("必ず");
+      if (c.hardness === "soft") bits.push("できれば");
+      if (c.freeText) bits.push(c.freeText);
+      return bits.join(" / ");
+    }
+
+    function exportText() {
+      const c = counts();
+      const lines = [
+        "【グループホーム1up 個人条件】仮名のみ。実名なし",
+        `記入: 制限なし${c.none} / 条件あり${c.filled} / 未${c.empty}`,
+        "",
+        ...state.people.map(personLine),
+      ];
+      const pairs = state.pairs.filter((x) => x.aId && x.bId);
+      if (pairs.length) {
+        lines.push("", "組:");
+        for (const pair of pairs) {
+          const a = STAFF.find((s) => s.id === pair.aId)?.displayName || pair.aId;
+          const b = STAFF.find((s) => s.id === pair.bId)?.displayName || pair.bId;
+          const t = pair.type === "must_pair" ? "必ず一緒" : "一緒に入れない";
+          lines.push(`${a} × ${b} ${t}（${pair.scope === "same_day" ? "同じ日" : "同じ棟"}）${pair.note || ""}`);
+        }
+      }
+      if (state.globalNote) lines.push("", "全員: " + state.globalNote);
+      const cons = consecutiveLine(state.consecutive);
+      if (cons) lines.push("", "連勤: " + cons);
+      return lines.join("\n");
+    }
+
+    function bindPerson() {
+      const p = state.people[state.index];
+      document.querySelectorAll("#person .seg").forEach((box) => {
+        const field = box.getAttribute("data-field");
+        box.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const val = btn.getAttribute("data-val");
+            if (field === "noSpecial") p.noSpecial = val === "1";
+            else p[field] = val;
+            persist();
+            render();
+          });
+        });
+      });
+      document.querySelectorAll("#person .days").forEach((box) => {
+        const field = box.getAttribute("data-days");
+        box.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const n = Number(btn.getAttribute("data-val"));
+            const cur = new Set((p[field] || []).map(Number));
+            if (cur.has(n)) cur.delete(n); else cur.add(n);
+            p[field] = [...cur];
+            persist();
+            render();
+          });
+        });
+      });
+      ["weekMax", "minWorkDays", "maxConsecutive", "fixedNote", "earliestStart", "latestEnd", "periodFrom", "periodTo", "memo"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", () => {
+          p[id] = el.value;
+          persist();
+          renderNav();
+        });
+      });
+    }
+
+    function bindPairs() {
+      document.getElementById("addPair")?.addEventListener("click", () => {
+        state.pairs.push({ type: "incompatible", aId: "", bId: "", scope: "same_floor", hardness: "hard", note: "" });
+        persist();
+        render();
+      });
+      document.querySelectorAll("[data-pair]").forEach((row) => {
+        const i = Number(row.getAttribute("data-pair"));
+        row.querySelectorAll("[data-k]").forEach((el) => {
+          el.addEventListener("change", () => {
+            state.pairs[i][el.getAttribute("data-k")] = el.value;
+            persist();
+          });
+          if (el.tagName === "INPUT") {
+            el.addEventListener("input", () => {
+              state.pairs[i][el.getAttribute("data-k")] = el.value;
+              persist();
+            });
+          }
+        });
+      });
+    }
+
+    const CONS_INPUTS = [
+      ["consCountOther", "countOther"],
+      ["consMaxAll", "maxAll"],
+      ["consMaxAllNight", "maxAllNight"],
+      ["consMaxFull", "maxFull"],
+      ["consMaxPart", "maxPart"],
+      ["consMaxKawamata", "maxKawamata"],
+      ["consMaxNightPeople", "maxNightPeople"],
+      ["consNightStreakMax", "nightStreakMax"],
+      ["consRestAfterStreakDays", "restAfterStreakDays"],
+      ["consFreeText", "freeText"],
+    ];
+
+    function syncConsecutive() {
+      const c = state.consecutive || emptyConsecutive();
+      document.querySelectorAll("#consecutive [data-cons-list]").forEach((el) => {
+        const key = el.getAttribute("data-cons-list");
+        const set = new Set(c[key] || []);
+        el.checked = set.has(el.value);
+      });
+      document.querySelectorAll("#consecutive [data-cons-field]").forEach((box) => {
+        const field = box.getAttribute("data-cons-field");
+        const cur = c[field] || "";
+        box.querySelectorAll("button").forEach((btn) => {
+          btn.classList.toggle("on", btn.getAttribute("data-val") === cur);
+        });
+      });
+      for (const [id, key] of CONS_INPUTS) {
+        const el = document.getElementById(id);
+        if (el) el.value = c[key] || "";
+      }
+    }
+
+    function bindConsecutive() {
+      document.querySelectorAll("#consecutive [data-cons-list]").forEach((el) => {
+        el.addEventListener("change", () => {
+          const key = el.getAttribute("data-cons-list");
+          const cur = new Set(state.consecutive[key] || []);
+          if (el.checked) cur.add(el.value); else cur.delete(el.value);
+          state.consecutive[key] = [...cur];
+          persist();
+        });
+      });
+      document.querySelectorAll("#consecutive [data-cons-field]").forEach((box) => {
+        const field = box.getAttribute("data-cons-field");
+        box.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const val = btn.getAttribute("data-val");
+            state.consecutive[field] = state.consecutive[field] === val ? "" : val;
+            persist();
+            syncConsecutive();
+          });
+        });
+      });
+      for (const [id, key] of CONS_INPUTS) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.addEventListener("input", () => {
+          state.consecutive[key] = el.value;
+          persist();
+        });
+        el.addEventListener("change", () => {
+          state.consecutive[key] = el.value;
+          persist();
+        });
+      }
+    }
+
+    function render() {
+      renderNav();
+      renderPerson();
+      renderPairs();
+      document.getElementById("globalNote").value = state.globalNote;
+      syncConsecutive();
+      document.getElementById("preview").textContent = exportText();
+      bindPerson();
+      bindPairs();
+      if (state.updatedAt) {
+        const t = new Date(state.updatedAt);
+        document.getElementById("saved").textContent = "この端末に保存済み " + t.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+      }
+    }
+
+    function go(delta) {
+      state.index = Math.max(0, Math.min(STAFF.length - 1, state.index + delta));
+      persist();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.getElementById("names").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-i]");
+      if (!btn) return;
+      state.index = Number(btn.getAttribute("data-i"));
+      persist();
+      render();
+    });
+    document.getElementById("prev").addEventListener("click", () => go(-1));
+    document.getElementById("next").addEventListener("click", () => go(1));
+    document.getElementById("none").addEventListener("click", () => {
+      state.people[state.index].noSpecial = true;
+      persist();
+      if (state.index < STAFF.length - 1) state.index += 1;
+      persist();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    document.getElementById("globalNote").addEventListener("input", (e) => {
+      state.globalNote = e.target.value;
+      persist();
+    });
+    document.getElementById("copy").addEventListener("click", async () => {
+      const text = exportText();
+      document.getElementById("preview").textContent = text;
+      try {
+        await navigator.clipboard.writeText(text);
+        toast("コピーしました");
+      } catch {
+        const pre = document.getElementById("preview");
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        toast("長押しでコピーしてください");
+      }
+    });
+    document.getElementById("copyJson").addEventListener("click", async () => {
+      const text = JSON.stringify(exportPayload(), null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        toast("JSONをコピーしました");
+      } catch {
+        document.getElementById("preview").textContent = text;
+        toast("下の枠を長押ししてコピー");
+      }
+    });
+    document.getElementById("json").addEventListener("click", () => {
+      const blob = new Blob(["\uFEFF" + JSON.stringify(exportPayload(), null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "1up-個人条件-仮名.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("JSONを保存しました");
+    });
+    document.getElementById("load").addEventListener("click", () => document.getElementById("file").click());
+    document.getElementById("file").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        if (parsed.kind !== KIND || !Array.isArray(parsed.people)) throw new Error("kind");
+        const next = emptyState();
+        next.people = next.people.map((p) => {
+          const got = parsed.people.find((x) => x.id === p.id);
+          return got ? { ...p, ...got, displayName: p.displayName } : p;
+        });
+        next.pairs = parsed.pairs?.length ? parsed.pairs : next.pairs;
+        next.consecutive = { ...emptyConsecutive(), ...(parsed.consecutive || {}) };
+        if (!Array.isArray(next.consecutive.countShifts)) next.consecutive.countShifts = [];
+        if (!Array.isArray(next.consecutive.patterns)) next.consecutive.patterns = [];
+        next.globalNote = parsed.globalNote || "";
+        state = next;
+        persist();
+        render();
+        toast("読み込みました");
+      } catch {
+        toast("このJSONは使えません");
+      }
+    });
+    bindConsecutive();
+    render();
+  </script>
+</body>
+</html>
