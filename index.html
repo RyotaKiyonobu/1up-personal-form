@@ -19,6 +19,7 @@
       background: var(--paper);
     }
     * { box-sizing: border-box; }
+    html { scroll-padding-bottom: 8rem; }
     body { margin: 0; background: var(--paper); }
     main { max-width: 560px; margin: 0 auto; padding: 12px 12px calc(96px + env(safe-area-inset-bottom)); }
     h1 { font-size: 1.15rem; margin: 0 0 6px; }
@@ -53,8 +54,15 @@
       padding: 10px 12px;
       font: inherit;
       min-height: 44px;
+      cursor: pointer;
+      touch-action: manipulation;
     }
-    .seg button.on, .days button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .seg button.on, .days button.on {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+      outline: 2px solid var(--ink);
+    }
     .seg button.warn.on { background: var(--accent); border-color: var(--accent); }
     .days { display: flex; flex-wrap: wrap; gap: 6px; }
     input[type="number"], input[type="date"], input[type="time"], select, textarea {
@@ -92,10 +100,12 @@
     .sticky {
       position: fixed;
       left: 0; right: 0; bottom: 0;
+      z-index: 4;
       background: color-mix(in srgb, var(--paper) 92%, white);
       border-top: 1px solid var(--line);
       padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     }
+    .sticky[hidden] { display: none; }
     .sticky inner, .sticky .row { max-width: 560px; margin: 0 auto; }
     .save { font-size: 0.75rem; color: var(--muted); text-align: center; margin: 0 0 4px; }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
@@ -366,12 +376,24 @@
       return filled ? "filled" : "empty";
     }
 
+    function ensureConsecutive() {
+      if (!state.consecutive) state.consecutive = emptyConsecutive();
+      if (!Array.isArray(state.consecutive.countShifts)) state.consecutive.countShifts = [];
+      if (!Array.isArray(state.consecutive.patterns)) state.consecutive.patterns = [];
+      return state.consecutive;
+    }
+
     function persist() {
-      state.updatedAt = new Date().toISOString();
-      localStorage.setItem(KEY, JSON.stringify(state));
-      const el = document.getElementById("saved");
-      const t = new Date(state.updatedAt);
-      el.textContent = "この端末に保存済み " + t.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+      ensureConsecutive();
+      try {
+        state.updatedAt = new Date().toISOString();
+        localStorage.setItem(KEY, JSON.stringify(state));
+        const el = document.getElementById("saved");
+        const t = new Date(state.updatedAt);
+        el.textContent = "この端末に保存済み " + t.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        document.getElementById("saved").textContent = "この端末に保存できません（入力は画面上に残ります）";
+      }
       document.getElementById("preview").textContent = exportText();
     }
 
@@ -708,7 +730,7 @@
     ];
 
     function syncConsecutive() {
-      const c = state.consecutive || emptyConsecutive();
+      const c = ensureConsecutive();
       document.querySelectorAll("#consecutive [data-cons-list]").forEach((el) => {
         const key = el.getAttribute("data-cons-list");
         const set = new Set(c[key] || []);
@@ -718,48 +740,64 @@
         const field = box.getAttribute("data-cons-field");
         const cur = c[field] || "";
         box.querySelectorAll("button").forEach((btn) => {
-          btn.classList.toggle("on", btn.getAttribute("data-val") === cur);
+          const on = btn.getAttribute("data-val") === cur;
+          btn.classList.toggle("on", on);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
         });
       });
       for (const [id, key] of CONS_INPUTS) {
         const el = document.getElementById(id);
-        if (el) el.value = c[key] || "";
+        if (el && document.activeElement !== el) el.value = c[key] || "";
       }
     }
 
     function bindConsecutive() {
-      document.querySelectorAll("#consecutive [data-cons-list]").forEach((el) => {
-        el.addEventListener("change", () => {
-          const key = el.getAttribute("data-cons-list");
-          const cur = new Set(state.consecutive[key] || []);
-          if (el.checked) cur.add(el.value); else cur.delete(el.value);
-          state.consecutive[key] = [...cur];
-          persist();
-        });
-      });
-      document.querySelectorAll("#consecutive [data-cons-field]").forEach((box) => {
+      const root = document.getElementById("consecutive");
+      if (!root) return;
+      root.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-val]");
+        const box = btn && btn.closest("[data-cons-field]");
+        if (!btn || !box) return;
+        const c = ensureConsecutive();
         const field = box.getAttribute("data-cons-field");
-        box.querySelectorAll("button").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const val = btn.getAttribute("data-val");
-            state.consecutive[field] = state.consecutive[field] === val ? "" : val;
-            persist();
-            syncConsecutive();
-          });
-        });
+        const val = btn.getAttribute("data-val");
+        c[field] = c[field] === val ? "" : val;
+        persist();
+        syncConsecutive();
       });
-      for (const [id, key] of CONS_INPUTS) {
-        const el = document.getElementById(id);
-        if (!el) continue;
-        el.addEventListener("input", () => {
-          state.consecutive[key] = el.value;
+      root.addEventListener("change", (e) => {
+        const el = e.target;
+        const c = ensureConsecutive();
+        if (el.matches("[data-cons-list]")) {
+          const key = el.getAttribute("data-cons-list");
+          const cur = new Set(c[key] || []);
+          if (el.checked) cur.add(el.value); else cur.delete(el.value);
+          c[key] = [...cur];
           persist();
-        });
-        el.addEventListener("change", () => {
-          state.consecutive[key] = el.value;
+          return;
+        }
+        const mapped = CONS_INPUTS.find(([id]) => id === el.id);
+        if (mapped) {
+          c[mapped[1]] = el.value;
           persist();
-        });
-      }
+        }
+      });
+      root.addEventListener("input", (e) => {
+        const mapped = CONS_INPUTS.find(([id]) => id === e.target.id);
+        if (!mapped) return;
+        ensureConsecutive()[mapped[1]] = e.target.value;
+        persist();
+      });
+    }
+
+    function bindStickyVisibility() {
+      const sticky = document.querySelector(".sticky");
+      const person = document.getElementById("person");
+      if (!sticky || !person || !("IntersectionObserver" in window)) return;
+      const io = new IntersectionObserver((entries) => {
+        sticky.hidden = !entries.some((entry) => entry.isIntersecting);
+      }, { threshold: 0.08 });
+      io.observe(person);
     }
 
     function render() {
@@ -867,6 +905,7 @@
       }
     });
     bindConsecutive();
+    bindStickyVisibility();
     render();
   </script>
 </body>
